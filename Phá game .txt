@@ -1,0 +1,184 @@
+-- MENU TÙNG LÂM DEX
+local gui = Instance.new("ScreenGui", game.CoreGui)
+local frame = Instance.new("Frame", gui)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Size = UDim2.new(0, 200, 0, 300)
+frame.Position = UDim2.new(0, 20, 0.5, -150)
+frame.Visible = false
+
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Text = "TÙNG LÂM DEX"
+toggleBtn.Size = UDim2.new(0, 120, 0, 30)
+toggleBtn.Position = UDim2.new(0, 20, 0.5, -180)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.MouseButton1Click:Connect(function()
+	frame.Visible = not frame.Visible
+end)
+
+function CreateToggle(text, callback)
+	local btn = Instance.new("TextButton", frame)
+	btn.Size = UDim2.new(1, -10, 0, 30)
+	btn.Position = UDim2.new(0, 5, 0, (#frame:GetChildren() - 1) * 35)
+	btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 14
+	btn.Text = "[OFF] " .. text
+	local active = false
+	btn.MouseButton1Click:Connect(function()
+		active = not active
+		btn.Text = (active and "[ON] " or "[OFF] ") .. text
+		callback(active)
+	end)
+end
+
+-- DANH SÁCH VŨ KHÍ
+local weaponList = { "Katana", "Trường Thương", "Đinh Ba", "Hắc Long", "Kiếm", "Gươm" }
+
+-- HITBOX 25
+CreateToggle("Hitbox 25 (vũ khí)", function(state)
+	if state then
+		_G.Hitbox = true
+		task.spawn(function()
+			while _G.Hitbox do
+				for _, v in pairs(workspace:GetDescendants()) do
+					if v:IsA("Humanoid") and v.Health > 0 and v ~= game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+						local myChar = game.Players.LocalPlayer.Character
+						local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+						local theirHRP = v.Parent and v.Parent:FindFirstChild("HumanoidRootPart")
+						if myHRP and theirHRP and (theirHRP.Position - myHRP.Position).Magnitude < 25 then
+							for _, tool in pairs(myChar:GetChildren()) do
+								if tool:IsA("Tool") and table.find(weaponList, tool.Name) then
+									tool:Activate()
+								end
+							end
+						end
+					end
+				end
+				task.wait(0.5)
+			end
+		end)
+	else
+		_G.Hitbox = false
+	end
+end)
+
+-- AUTO CLICK 2/s
+CreateToggle("Auto Click 2/s", function(state)
+	if state then
+		_G.AutoClick = true
+		task.spawn(function()
+			while _G.AutoClick do
+				mouse1click()
+				wait(0.5)
+			end
+		end)
+	else
+		_G.AutoClick = false
+	end
+end)
+
+-- SPEED + ANTI KICK
+CreateToggle("Speed 40 + AntiKick", function(state)
+	local plr = game.Players.LocalPlayer
+	local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		if state then
+			humanoid.WalkSpeed = 40
+			if not _G.AntiKick then
+				_G.AntiKick = true
+				plr.Idled:Connect(function()
+					game:GetService("VirtualUser"):Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+					wait(1)
+					game:GetService("VirtualUser"):Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+				end)
+			end
+		else
+			humanoid.WalkSpeed = 16
+		end
+	end
+end)
+
+-- ESP NGƯỜI CHƠI
+CreateToggle("ESP Người + Máu", function(state)
+	if state then
+		_G.ESP = true
+		task.spawn(function()
+			while _G.ESP do
+				for _, plr in pairs(game.Players:GetPlayers()) do
+					if plr ~= game.Players.LocalPlayer and plr.Character then
+						if not plr.Character:FindFirstChild("ESPName") then
+							local billboard = Instance.new("BillboardGui", plr.Character)
+							billboard.Name = "ESPName"
+							billboard.Size = UDim2.new(0, 100, 0, 30)
+							billboard.AlwaysOnTop = true
+							billboard.Adornee = plr.Character:FindFirstChild("Head")
+							local text = Instance.new("TextLabel", billboard)
+							text.Size = UDim2.new(1, 0, 1, 0)
+							text.BackgroundTransparency = 1
+							text.TextColor3 = Color3.new(1, 1, 1)
+							text.TextStrokeTransparency = 0
+							text.Text = plr.Name .. " | HP: " .. math.floor((plr.Character:FindFirstChildOfClass("Humanoid") or {}).Health or 0)
+						end
+					end
+				end
+				task.wait(1)
+			end
+		end)
+	else
+		_G.ESP = false
+		for _, plr in pairs(game.Players:GetPlayers()) do
+			if plr.Character and plr.Character:FindFirstChild("ESPName") then
+				plr.Character.ESPName:Destroy()
+			end
+		end
+	end
+end)
+
+-- AUTO KILL SAU LƯNG (TẦM 20)
+CreateToggle("Auto Kill Sau Lưng", function(state)
+	if state then
+		_G.AutoBackstab = true
+		task.spawn(function()
+			while _G.AutoBackstab do
+				local myChar = game.Players.LocalPlayer.Character
+				local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+				if not myHRP then continue end
+				for _, plr in pairs(game.Players:GetPlayers()) do
+					if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+						local targetHRP = plr.Character.HumanoidRootPart
+						local dist = (targetHRP.Position - myHRP.Position).Magnitude
+						if dist < 20 then
+							local dir = (targetHRP.CFrame.LookVector)
+							local toYou = (myHRP.Position - targetHRP.Position).Unit
+							if dir:Dot(toYou) > 0.5 then -- Đảm bảo đang ở sau lưng
+								for _, tool in pairs(myChar:GetChildren()) do
+									if tool:IsA("Tool") then
+										tool:Activate()
+									end
+								end
+							end
+						end
+					end
+				end
+				wait(0.5)
+			end
+		end)
+	else
+		_G.AutoBackstab = false
+	end
+end)
+
+-- ANTI BAN / CHỐNG KICK CƠ BẢN
+local mt = getrawmetatable(game)
+setreadonly(mt, false)
+local old = mt.__namecall
+mt.__namecall = newcclosure(function(self, ...)
+	local args = {...}
+	local method = getnamecallmethod()
+	if tostring(self):lower():find("ban") or tostring(self):lower():find("kick") or method == "Kick" then
+		return warn("[ANTI BAN] - BLOCKED")
+	end
+	return old(self, ...)
+end)
