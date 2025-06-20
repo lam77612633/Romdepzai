@@ -1,0 +1,254 @@
+--[[ 
+🌟 TÙNG LÂM DEX FULL MENU (BYPASS CỰC MẠNH)
+✅ Hitbox 25
+✅ Auto Click 2/s
+✅ Speed 40 + Anti Kick
+✅ ESP, Fly, Auto Farm
+✅ Tele gần người chơi/NPC
+✅ Chỉnh FlySpeed
+🛡️ Anti Kick / Ban / RemoteEvent / getgc / hookfunction
+💬 Gõ "menu" để bật/tắt menu
+--]]
+
+-- 🛡️ BẢO VỆ CHỐNG KICK/BAN CỰC MẠNH
+local mt = getrawmetatable(game)
+setreadonly(mt, false)
+local old = mt.__namecall
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod():lower()
+    local args = {...}
+    if method:find("kick") or tostring(self):lower():find("kick") then
+        warn("🚫 Metatable Kick bị chặn!")
+        return nil
+    end
+    if method:find("ban") or tostring(self):lower():find("ban") then
+        warn("🚫 Metatable Ban bị chặn!")
+        return nil
+    end
+    if self:IsA("RemoteEvent") and typeof(args[1]) == "string" and args[1]:lower():find("kick") then
+        warn("🚫 RemoteEvent nghi ngờ bị chặn!")
+        return nil
+    end
+    return old(self, ...)
+end)
+
+-- Hook Kick nội bộ
+hookfunction(game.Players.LocalPlayer.Kick, function(...) 
+    warn("🚫 Hook Kick bị chặn!")
+    return nil 
+end)
+
+-- Chặn function getgc có từ "kick" hoặc "ban"
+for _, func in pairs(getgc(true)) do
+    if typeof(func) == "function" and islclosure(func) and not isexecutorclosure(func) then
+        local info = debug.getinfo(func)
+        if info.name and (info.name:lower():find("kick") or info.name:lower():find("ban")) then
+            hookfunction(func, function(...) 
+                warn("🚫 getgc function bị chặn:", info.name)
+                return nil 
+            end)
+        end
+    end
+end
+
+-- GUI
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local Frame = Instance.new("Frame")
+local UIListLayout = Instance.new("UIListLayout")
+local UICorner = Instance.new("UICorner")
+
+Frame.Parent = ScreenGui
+Frame.Size = UDim2.new(0, 180, 0, 400)
+Frame.Position = UDim2.new(0, 10, 0.5, -200)
+Frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+UICorner.Parent = Frame
+UIListLayout.Parent = Frame
+UIListLayout.Padding = UDim.new(0, 5)
+
+local function createButton(text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Text = text
+    btn.Size = UDim2.new(1, -10, 0, 30)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 14
+    btn.Parent = Frame
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Trạng thái
+local toggles = {
+    Hitbox = false,
+    AutoClick = false,
+    Speed = false,
+    ESP = false,
+    Fly = false,
+    Farm = false
+}
+
+-- HITBOX
+function toggleHitbox()
+    toggles.Hitbox = not toggles.Hitbox
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= game.Players.LocalPlayer and v.Character then
+            local hrp = v.Character:FindFirstChild("HumanoidRootPart")
+            if toggles.Hitbox then
+                local box = Instance.new("SelectionBox", hrp)
+                box.Adornee = hrp
+                box.Color3 = Color3.fromRGB(255, 0, 0)
+                box.LineThickness = 0.05
+                box.Name = "HitBox"
+            else
+                if hrp:FindFirstChild("HitBox") then hrp.HitBox:Destroy() end
+            end
+        end
+    end
+end
+
+-- AUTO CLICK
+function toggleAutoClick()
+    toggles.AutoClick = not toggles.AutoClick
+    if toggles.AutoClick then
+        task.spawn(function()
+            while toggles.AutoClick do
+                mouse1click()
+                wait(0.5)
+            end
+        end)
+    end
+end
+
+-- SPEED
+function toggleSpeed()
+    toggles.Speed = not toggles.Speed
+    local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+    if hum then hum.WalkSpeed = toggles.Speed and 40 or 16 end
+end
+
+-- ESP
+function toggleESP()
+    toggles.ESP = not toggles.ESP
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
+            local head = v.Character.Head
+            if toggles.ESP then
+                if not head:FindFirstChild("ESP") then
+                    local esp = Instance.new("BillboardGui", head)
+                    esp.Name = "ESP"
+                    esp.Size = UDim2.new(0, 100, 0, 40)
+                    esp.AlwaysOnTop = true
+                    local label = Instance.new("TextLabel", esp)
+                    label.Size = UDim2.new(1, 0, 1, 0)
+                    label.BackgroundTransparency = 1
+                    label.TextColor3 = Color3.new(1, 0, 0)
+                    label.TextScaled = true
+                    label.Text = v.Name
+                end
+            else
+                if head:FindFirstChild("ESP") then head.ESP:Destroy() end
+            end
+        end
+    end
+end
+
+-- FLY
+local flySpeed = 5
+local flying = false
+function toggleFly()
+    toggles.Fly = not toggles.Fly
+    local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if toggles.Fly then
+        flying = true
+        local bv = Instance.new("BodyVelocity", hrp)
+        bv.Name = "FlyVelocity"
+        bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+        bv.Velocity = Vector3.zero
+
+        local dir = Vector3.zero
+        local uis = game:GetService("UserInputService")
+        uis.InputBegan:Connect(function(i)
+            if i.KeyCode == Enum.KeyCode.W then dir = Vector3.new(0,0,-1)
+            elseif i.KeyCode == Enum.KeyCode.S then dir = Vector3.new(0,0,1)
+            elseif i.KeyCode == Enum.KeyCode.A then dir = Vector3.new(-1,0,0)
+            elseif i.KeyCode == Enum.KeyCode.D then dir = Vector3.new(1,0,0)
+            elseif i.KeyCode == Enum.KeyCode.Space then dir = Vector3.new(0,1,0)
+        end end)
+        uis.InputEnded:Connect(function() dir = Vector3.zero end)
+
+        task.spawn(function()
+            while flying do
+                bv.Velocity = hrp.CFrame:VectorToWorldSpace(dir) * flySpeed
+                wait()
+            end
+        end)
+    else
+        flying = false
+        if hrp:FindFirstChild("FlyVelocity") then hrp.FlyVelocity:Destroy() end
+    end
+end
+
+-- CHỈNH TỐC ĐỘ BAY
+createButton("⬆️ Tăng Fly Speed", function() flySpeed = flySpeed + 2 end)
+createButton("⬇️ Giảm Fly Speed", function() flySpeed = math.max(flySpeed - 2, 2) end)
+
+-- AUTO FARM
+function toggleFarm()
+    toggles.Farm = not toggles.Farm
+    local plr = game.Players.LocalPlayer
+    task.spawn(function()
+        while toggles.Farm do
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("Model") and v:FindFirstChild("Humanoid") and v ~= plr.Character then
+                    local h = v:FindFirstChild("Humanoid")
+                    local root = v:FindFirstChild("HumanoidRootPart")
+                    if h and h.Health > 0 and root and (root.Position - plr.Character.HumanoidRootPart.Position).Magnitude < 25 then
+                        mouse1click()
+                    end
+                end
+            end
+            wait(0.5)
+        end
+    end)
+end
+
+-- TELEPORT GẦN NHẤT
+function teleportToNearest()
+    local plr = game.Players.LocalPlayer
+    local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local closest
+    local shortest = 20
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v ~= plr.Character then
+            local hroot = v:FindFirstChild("HumanoidRootPart")
+            if hroot and (hroot.Position - root.Position).Magnitude < shortest then
+                shortest = (hroot.Position - root.Position).Magnitude
+                closest = hroot
+            end
+        end
+    end
+    if closest then
+        root.CFrame = closest.CFrame + Vector3.new(0, 2, 0)
+    end
+end
+
+-- MENU NÚT
+createButton("Hitbox 25 (Bật/Tắt)", toggleHitbox)
+createButton("Auto Click 2/s", toggleAutoClick)
+createButton("Speed 40 + Anti Kick", toggleSpeed)
+createButton("ESP (Bật/Tắt)", toggleESP)
+createButton("Fly (Bật/Tắt)", toggleFly)
+createButton("Auto Farm (Bật/Tắt)", toggleFarm)
+createButton("Teleport gần nhất", teleportToNearest)
+createButton("❌ Ẩn Menu", function() Frame.Visible = false end)
+
+-- MỞ MENU QUA CHAT
+Frame.Visible = false
+game.Players.LocalPlayer.Chatted:Connect(function(msg)
+    if msg:lower():find("menu") then
+        Frame.Visible = not Frame.Visible
+    end
+end)
