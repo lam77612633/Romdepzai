@@ -1,0 +1,475 @@
+-- SERVIÇOS E VARIÁVEIS
+
+local Players = game:GetService("Players")
+
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+
+local PlayerGui = player:WaitForChild("PlayerGui")
+
+local KEY_CORRETA = "la_grande"
+
+local pos1, pos2, pos3, pos4 = nil, nil, nil, nil
+
+local tweenEmExecucao = false
+
+local VELOCIDADE_TELEGUIADO = 40
+
+-- CORES VERDE NEON
+
+local corFundo = Color3.fromRGB(10, 30, 10)           -- fundo verde escuro
+
+local corVerdeNeon = Color3.fromRGB(0, 255, 0)        -- verde neon brilhante
+
+local corVerdeEscuro = Color3.fromRGB(0, 180, 0)      -- verde mais escuro para textos
+
+local function criarNeon(frame)
+
+	local neon = Instance.new("UIStroke")	neon.Color = corVerdeNeon
+
+	neon.Thickness = 2
+
+	neon.Transparency = 0.3
+
+	neon.Parent = frame
+
+end
+
+-- GUI DE KEY
+
+local keyGui = Instance.new("ScreenGui")
+
+keyGui.Name = "KeyGui"
+
+keyGui.ResetOnSpawn = false
+
+keyGui.Parent = PlayerGui
+
+local keyFrame = Instance.new("Frame")
+
+keyFrame.Size = UDim2.new(0, 280, 0, 160)
+
+keyFrame.Position = UDim2.new(0.5, -140, 0.5, -80)
+
+keyFrame.BackgroundColor3 = corFundo
+
+keyFrame.Active = true
+
+keyFrame.Draggable = true
+
+keyFrame.Parent = keyGui
+
+Instance.new("UICorner", keyFrame).CornerRadius = UDim.new(0, 12)
+
+criarNeon(keyFrame)
+
+local title = Instance.new("TextLabel")
+
+title.Size = UDim2.new(1, 0, 0, 40)
+
+title.Position = UDim2.new(0, 0, 0, 10)
+
+title.BackgroundTransparency = 1
+
+title.Text = "🔑 Digite a Key:"
+
+title.TextColor3 = corVerdeEscuro
+
+title.Font = Enum.Font.GothamBlack
+
+title.TextSize = 24
+
+title.Parent = keyFrame
+
+local textBox = Instance.new("TextBox")
+
+textBox.Size = UDim2.new(0.8, 0, 0, 40)
+
+textBox.Position = UDim2.new(0.1, 0, 0, 60)
+
+textBox.PlaceholderText = "Digite a key aqui..."
+
+textBox.Text = ""
+
+textBox.TextSize = 20
+
+textBox.Font = Enum.Font.Gotham
+
+textBox.TextColor3 = corVerdeNeon
+
+textBox.BackgroundColor3 = Color3.fromRGB(10, 20, 10)
+
+textBox.Parent = keyFrame
+
+Instance.new("UICorner", textBox).CornerRadius = UDim.new(0, 8)
+
+criarNeon(textBox)
+
+local confirmar = Instance.new("TextButton")
+
+confirmar.Size = UDim2.new(0.8, 0, 0, 45)
+
+confirmar.Position = UDim2.new(0.1, 0, 0, 110)
+
+confirmar.Text = "Confirmar"
+
+confirmar.Font = Enum.Font.GothamBlack
+
+confirmar.TextSize = 22
+
+confirmar.TextColor3 = corFundo
+
+confirmar.BackgroundColor3 = corVerdeNeon
+
+confirmar.Parent = keyFrame
+
+Instance.new("UICorner", confirmar).CornerRadius = UDim.new(0, 10)
+
+criarNeon(confirmar)
+
+-- GUI PRINCIPAL
+
+local mainGui = Instance.new("ScreenGui")
+
+mainGui.Name = "LaGrandeCombinaison"
+
+mainGui.ResetOnSpawn = false
+
+mainGui.Enabled = false
+
+mainGui.Parent = PlayerGui
+
+local mainFrame = Instance.new("Frame")
+
+mainFrame.Size = UDim2.new(0, 280, 0, 250)
+
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -125)
+
+mainFrame.BackgroundColor3 = corFundo
+
+mainFrame.Active = true
+
+mainFrame.Draggable = true
+
+mainFrame.Parent = mainGui
+
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 15)
+
+criarNeon(mainFrame)
+
+local titulo = Instance.new("TextLabel")
+
+titulo.Size = UDim2.new(1, 0, 0, 45)
+
+titulo.BackgroundTransparency = 1
+
+titulo.Text = "la_grande hub"
+
+titulo.Font = Enum.Font.GothamBlack
+
+titulo.TextScaled = true
+
+titulo.TextColor3 = corVerdeNeon
+
+titulo.Parent = mainFrame
+
+local function criarBotao(texto, ordem)
+
+	local b = Instance.new("TextButton")
+
+	b.Size = UDim2.new(0, 260, 0, 45)
+
+	b.Position = UDim2.new(0.5, -130, 0, 55 + (ordem - 1) * 50)
+
+	b.Text = texto
+
+	b.TextColor3 = corFundo
+
+	b.Font = Enum.Font.GothamBlack
+
+	b.TextSize = 20
+
+	b.AutoButtonColor = false
+
+	b.BackgroundColor3 = corVerdeNeon
+
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
+
+	criarNeon(b)
+
+	b.Parent = mainFrame
+
+	return b
+
+end
+
+local botao1 = criarBotao("📍 Marcar posição 1", 1)
+
+local botao2 = criarBotao("📍 Marcar posição 2", 2)
+
+local botao3 = criarBotao("📍 Marcar posição 3", 3)
+
+local botao4 = criarBotao("📍 Marcar posição 4", 4)
+
+local botaoGo = criarBotao("🚀 Teleguiado", 5)
+
+-- Marcar posições
+
+for i, botao in ipairs({botao1, botao2, botao3, botao4}) do
+
+	botao.MouseButton1Click:Connect(function()
+
+		local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+
+		if hrp then
+
+			if i == 1 then pos1 = hrp.Position
+
+			elseif i == 2 then pos2 = hrp.Position
+
+			elseif i == 3 then pos3 = hrp.Position
+
+			elseif i == 4 then pos4 = hrp.Position end
+
+			botao.Text = "✅ Posição " .. i .. " marcada!"
+
+			task.delay(2, function()
+
+				botao.Text = "📍 Marcar posição " .. i
+
+			end)
+
+		end
+
+	end)
+
+end
+
+-- Função mover para com invisibilidade e anti-bloco
+
+local function moverPara(destino, velocidade)
+
+	if tweenEmExecucao or not destino then return end
+
+	tweenEmExecucao = true
+
+	local char = player.Character or player.CharacterAdded:Wait()
+
+	local hrp = char:WaitForChild("HumanoidRootPart")
+
+	local humanoid = char:WaitForChild("Humanoid")
+
+	-- Deixar invisível e anti-bloco
+
+	for _, part in ipairs(char:GetDescendants()) do
+
+		if part:IsA("BasePart") then
+
+			part.Transparency = 1
+
+			part.CanCollide = false
+
+			part.Anchored = false
+
+			if part:IsA("MeshPart") then
+
+				part.LocalTransparencyModifier = 1
+
+			end
+
+		elseif part:IsA("Decal") then
+
+			part.Transparency = 1
+
+		end
+
+	end
+
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+
+	humanoid.Health = humanoid.MaxHealth
+
+	humanoid.PlatformStand = false
+
+	humanoid.Sit = false
+
+	local dist = (hrp.Position - destino).Magnitude
+
+	local tempo = dist / velocidade
+
+	local tween = TweenService:Create(hrp, TweenInfo.new(tempo, Enum.EasingStyle.Linear), {Position = destino})
+
+	tween:Play()
+
+	tween.Completed:Wait()
+
+	-- Após mover, manter invisível
+
+	hrp.Velocity = Vector3.zero
+
+	hrp.RotVelocity = Vector3.zero
+
+	humanoid.WalkSpeed = 16
+
+	tweenEmExecucao = false
+
+end
+
+botaoGo.MouseButton1Click:Connect(function()
+
+	for _, destino in ipairs({pos1, pos2, pos3, pos4}) do
+
+		if destino then
+
+			moverPara(destino, VELOCIDADE_TELEGUIADO)
+
+			task.wait(0.1)
+
+		end
+
+	end
+
+end)
+
+-- Ícone para abrir/fechar GUI principal
+
+local iconGui = Instance.new("ScreenGui")
+
+iconGui.Name = "IconeScript"
+
+iconGui.ResetOnSpawn = false
+
+iconGui.Parent = PlayerGui
+
+iconGui.Enabled = false
+
+local icon = Instance.new("TextButton")
+
+icon.Size = UDim2.new(0, 60, 0, 60)
+
+icon.Position = UDim2.new(0, 10, 0, 10)
+
+icon.Text = "Lá"
+
+icon.TextColor3 = corVerdeNeon
+
+icon.TextSize = 28
+
+icon.Font = Enum.Font.GothamBlack
+
+icon.BackgroundColor3 = corFundo
+
+icon.Parent = iconGui
+
+Instance.new("UICorner", icon).CornerRadius = UDim.new(1, 0)
+
+criarNeon(icon)
+
+icon.MouseButton1Click:Connect(function()
+
+	mainGui.Enabled = not mainGui.Enabled
+
+end)
+
+-- Confirmar key
+
+confirmar.MouseButton1Click:Connect(function()
+
+	if textBox.Text:lower() == KEY_CORRETA then
+
+		keyGui:Destroy()
+
+		mainGui.Enabled = true
+
+		iconGui.Enabled = true
+
+	else
+
+		textBox.Text = "❌ Key incorreta"
+
+	end
+
+end)
+
+-- Anti-reset e anti-bloco automático ao spawnar + anti-morte
+
+player.CharacterAdded:Connect(function(char)
+
+	local humanoid = char:WaitForChild("Humanoid")
+
+	local hrp = char:WaitForChild("HumanoidRootPart")
+
+	-- Remove partes muito próximas do hrp (bug)
+
+	for _, p in ipairs(char:GetChildren()) do
+
+		if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" and (p.Position - hrp.Position).Magnitude < 2 then
+
+			p:Destroy()
+
+		end
+
+	end
+
+	-- Loop para corrigir invisibilidade e partes bugadas (mantendo visível após reset)
+
+	task.spawn(function()
+
+		while hrp and hrp.Parent do
+
+			for _, part in pairs(char:GetDescendants()) do
+
+				if part:IsA("BasePart") then
+
+					part.Transparency = 0
+
+					part.CanCollide = true
+
+					part.Anchored = false
+
+					if part:IsA("MeshPart") then
+
+						part.LocalTransparencyModifier = 0
+
+					end
+
+					if (part.Position - hrp.Position).Magnitude > 5 and part.Name ~= "HumanoidRootPart" then
+
+						pcall(function() part:Destroy() end)
+
+					end
+
+				elseif part:IsA("Decal") then
+
+					part.Transparency = 0
+
+				end
+
+			end
+
+			task.wait(1)
+
+		end
+
+	end)
+
+	-- Teleporta para pos1 no morrer (se pos1 marcada)
+
+	humanoid.Died:Connect(function()
+
+		task.wait(0.5)
+
+		local newChar = player.Character or player.CharacterAdded:Wait()
+
+		local newHrp = newChar:WaitForChild("HumanoidRootPart")
+
+		if pos1 then
+
+			newHrp.CFrame = CFrame.new(pos1)
+
+		end
+
+	end)
+
+end)
